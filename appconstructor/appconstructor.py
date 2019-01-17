@@ -3,6 +3,10 @@ import importlib
 import logging
 
 LOGGER = logging.getLogger(__name__)
+SECTIONS_TO_SKIP = {
+    'DEFAULT',
+    'global'
+}
 CONFIG_KEYWORDS = {
     'class',
     'constructor',
@@ -27,12 +31,15 @@ def construct(config_filename='app.cfg', resources_to_load=None):
         LOGGER.info('Will load all resources')
         resources_to_load = config
     else:
-        LOGGER.info('Will load the following resources:\n%s', '\n'.join((resources_to_load)))
+        LOGGER.info('Will load the following resources:\n%s', '\n'.join(
+            resources_to_load))
 
     app = App()
 
     LOGGER.info('Loading resources')
-    for resource_id in [id for id in resources_to_load if id not in {'DEFAULT', 'global'}]:
+    for resource_id in [
+            id for id in resources_to_load
+            if id not in SECTIONS_TO_SKIP]:
         __load__(app, resource_id, config)
     LOGGER.info('Resources loaded')
 
@@ -43,7 +50,7 @@ def __load__(app, resource_id, config):
     if not hasattr(app, resource_id):
         LOGGER.info('Loading resource "%s"', resource_id)
 
-        if not resource_id in config:
+        if resource_id not in config:
             raise BadConfigError(
                 'Could not find configuration for resource "{}"'.format(
                     resource_id))
@@ -80,12 +87,15 @@ def __load__(app, resource_id, config):
                 if reference not in config['global']:
                     raise BadConfigError(
                         'Could not find global property "{}" '
-                        'required by resource "{}"'.format(reference, resource_id))
+                        'required by resource "{}"'.format(
+                            reference, resource_id))
 
                 params[param] = config['global'][reference]
             elif value.startswith('ref:'):
                 dependency_id = value[len('ref:'):]
-                LOGGER.debug('Resource "%s" does not exist, must load', dependency_id)
+                LOGGER.debug(
+                    'Resource "%s" does not exist, must load',
+                    dependency_id)
                 if not hasattr(app, dependency_id):
                     __load__(app, dependency_id, config)
                 else:

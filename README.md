@@ -9,3 +9,8 @@ python demo
 ```
 
 The demo configuration can be found in `demo/app.sample.cfg`; it provides examples for defining resource dependencies, values and global values.
+
+## TODO
+
+* Documentation
+* Tests

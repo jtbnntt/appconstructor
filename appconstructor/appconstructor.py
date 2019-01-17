@@ -12,6 +12,9 @@ CONFIG_KEYWORDS = {
     'constructor',
     'module'
 }
+GLOBAL_PREFIX = 'global:'
+REF_PREFIX = 'ref:'
+STRING_PREFIX = 'string:'
 
 
 class BadConfigError(Exception):
@@ -80,39 +83,57 @@ def __load__(app, resource_id, config):
 
             value = resource_config[param]
 
-            if value.startswith('global:'):
-                reference = value[len('global:'):]
-                LOGGER.debug('Loading global property "%s"', reference)
-
-                if reference not in config['global']:
-                    raise BadConfigError(
-                        'Could not find global property "{}" '
-                        'required by resource "{}"'.format(
-                            reference, resource_id))
-
-                params[param] = config['global'][reference]
+            if value.startswith(GLOBAL_PREFIX):
+                __handle_global__(config, params, param, resource_id, value)
             elif value.startswith('ref:'):
-                dependency_id = value[len('ref:'):]
-                LOGGER.debug(
-                    'Resource "%s" does not exist, must load',
-                    dependency_id)
-                if not hasattr(app, dependency_id):
-                    __load__(app, dependency_id, config)
-                else:
-                    LOGGER.debug('Resource "%s" exists', dependency_id)
-
-                if not hasattr(app, dependency_id):
-                    raise BadConfigError(
-                        'Could not find referenced resource "{}" required '
-                        'by resource "{}"'.format(dependency_id, resource_id))
-
-                params[param] = getattr(app, dependency_id)
+                __handle_ref__(config, app, params, param, resource_id, value)
             elif value.startswith('string:'):
-                LOGGER.debug('Loading property "%s"', param)
-                params[param] = value[len('string:'):]
+                __handle_string__(params, param, value)
             else:
-                LOGGER.debug('Loading property "%s"', param)
-                params[param] = value
+                __handle_default__(params, param, value)
 
         setattr(app, resource_id, constructor(**params))
         LOGGER.info('Finished loading resource "%s"', resource_id)
+
+
+def __handle_global__(config, params, param, resource_id, value):
+    reference = value[len(GLOBAL_PREFIX):]
+    LOGGER.debug('Loading global property "%s"', reference)
+
+    if reference not in config['global']:
+        raise BadConfigError(
+            'Could not find global property "{}" '
+            'required by resource "{}"'.format(
+                reference, resource_id))
+
+    params[param] = config['global'][reference]
+
+
+def __handle_ref__(config, app, params, param, resource_id, value):
+    dependency_id = value[len(REF_PREFIX):]
+
+    LOGGER.debug(
+        'Resource "%s" does not exist, must load',
+        dependency_id)
+
+    if not hasattr(app, dependency_id):
+        __load__(app, dependency_id, config)
+    else:
+        LOGGER.debug('Resource "%s" exists', dependency_id)
+
+    if not hasattr(app, dependency_id):
+        raise BadConfigError(
+            'Could not find referenced resource "{}" required '
+            'by resource "{}"'.format(dependency_id, resource_id))
+
+    params[param] = getattr(app, dependency_id)
+
+
+def __handle_string__(params, param, value):
+    LOGGER.debug('Loading property "%s"', param)
+    params[param] = value[len(STRING_PREFIX):]
+
+
+def __handle_default__(params, param, value):
+    LOGGER.debug('Loading property "%s"', param)
+    params[param] = value

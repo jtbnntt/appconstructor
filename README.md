@@ -20,6 +20,14 @@ ENV=dev python setup.py develop
 
 The `ENV=dev` variable will cause dev dependencies to be installed. Omitting it will install only dependencies required for production.
 
+## Running linter
+
+To check code style, run
+
+```
+./scripts/lint
+```
+
 ## TODO
 
 * Documentation

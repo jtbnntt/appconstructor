@@ -1,6 +1,10 @@
+import json
 import os
 
 from setuptools import setup, find_packages
+
+with open('version.json') as version_fh:
+    version = '.'.join([str(part) for part in json.load(version_fh)])
 
 with open('README.md') as readme_fh:
     long_description = readme_fh.read()
@@ -13,7 +17,7 @@ with open('requirements.txt') as dependencies_fh:
 
 setup(
     name='appconstructor',
-    version='0.0.0',
+    version=version,
     description='Tool to create apps with injected resources',
     long_description=long_description,
     long_description_content_type='text/markdown',
